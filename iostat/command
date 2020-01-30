@@ -1,0 +1,51 @@
+## COMPILE:
+$ make clean 
+$ make 
+
+## I/O O_SYNC (Synchronous) 
+
+sudo ./main -SYNC 1 -OFFSET 0 -CACHE_FULL 0 -PATH data.txt  > plot/trace.json
+sudo ./main -SYNC 1 -OFFSET 1 -CACHE_FULL 0 -PATH data.txt  > plot/trace.json
+
+## I/O (NORMAL) 
+
+sudo ./main -SYNC 0 -OFFSET 0 -CACHE_FULL 0 -PATH data.txt  > plot/trace.json
+sudo ./main -SYNC 0 -OFFSET 1 -CACHE_FULL 0 -PATH data.txt  > plot/trace.json
+
+## Génerer la courbe: 
+
+$ cd plot/
+$ make
+
+>> la courbe est  dans le repertoire courant 
+
+
+## Modifcation à faire pour adapter son code  !!
+
+>> util.h:
+> OUTPUT_SIZE : pour indiquer le nombre total d'otets a ecrite
+> OFFSET	  : l'offest(trou) à prendre entre chaque ecriture
+> TO_WRITE	  : le nombre de page à ecrire consecutivement, ex:
+			   TO_WRITE = 2, OFFSET = 1:
+			   [///][///][   ][///][///][   ] ...
+> IOSTAT_PATH : indiquer le chemin retourner par which iostat, ex,
+				$ which iostat
+				/usr/bin/iostat
+> DISK_DEVICE : indiquer le device a analyser, ex, 
+				$ df /tmp
+				/dev/sda5 
+				>> Donc il faut indiquer DISK_DEVICE = "sda" (PAS "sda5" !!!!)
+
+>> /plot/makefile:
+> DISK_DEVICE 	: indiquer le device a analyser, ex,
+				$ df /tmp
+				/dev/sda5
+				>> Donc il faut indiquer DISK_DEVICE = "sda5"  
+				
+# Remarque: 
+Dans /plot/, faire un make une fois, un 2 make va entrainer une erreur,
+Donc soit, il faut refaire l'operation à nouveau, ou
+Ouvrir le fichier trace.json et supprimer les dernieres caracteres : {}]}]}}
+puis refaire un make 
+
+
