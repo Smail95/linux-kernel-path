@@ -1,0 +1,59 @@
+diff -Nru linux-5.0.6/mm/page-writeback.c linux-5.0.6-2/mm/page-writeback.c
+--- linux-5.0.6/mm/page-writeback.c	2019-04-03 06:27:39.000000000 +0200
++++ linux-5.0.6-psar/mm/page-writeback.c	2019-05-29 16:08:04.940510035 +0200
+@@ -2100,22 +2100,41 @@
+ void tag_pages_for_writeback(struct address_space *mapping,
+ 			     pgoff_t start, pgoff_t end)
+ {
+-	XA_STATE(xas, &mapping->i_pages, start);
+-	unsigned int tagged = 0;
+-	void *page;
++#define MAXRANGE 98
++ 	XA_STATE(xas, &mapping->i_pages, start);
++ 	unsigned int tagged = 0;
++	void *page, *page2;
++	pgoff_t index = start;
++	pgoff_t last = start;
+
+-	xas_lock_irq(&xas);
+-	xas_for_each_marked(&xas, page, end, PAGECACHE_TAG_DIRTY) {
+-		xas_set_mark(&xas, PAGECACHE_TAG_TOWRITE);
+-		if (++tagged % XA_CHECK_SCHED)
+-			continue;
+-
+-		xas_pause(&xas);
+-		xas_unlock_irq(&xas);
+-		cond_resched();
+-		xas_lock_irq(&xas);
+-	}
+-	xas_unlock_irq(&xas);
++ 	xas_lock_irq(&xas);
++ 	xas_for_each_marked(&xas, page, end, PAGECACHE_TAG_DIRTY) {
++		index = ((struct page *) page)->index;
++		if(index-last<=MAXRANGE+1){
++			xas_set(&xas,last);
++			xas_for_each(&xas, page2, index){
++				xas_set_mark(&xas, PAGECACHE_TAG_TOWRITE
++					     | PAGECACHE_TAG_DIRTY);
++				if (++tagged % XA_CHECK_SCHED)
++					continue;
++				xas_pause(&xas);
++				xas_unlock_irq(&xas);
++				cond_resched();
++				xas_lock_irq(&xas);
++			}
++		}else{
++			xas_set_mark(&xas, PAGECACHE_TAG_TOWRITE
++				     | PAGECACHE_TAG_DIRTY);
++			if (++tagged % XA_CHECK_SCHED)
++				continue;
++			xas_pause(&xas);
++			xas_unlock_irq(&xas);
++			cond_resched();
++			xas_lock_irq(&xas);
++		}
++		last = index;
++ 	}
++ 	xas_unlock_irq(&xas);
+ }
+ EXPORT_SYMBOL(tag_pages_for_writeback);
